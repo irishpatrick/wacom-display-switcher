@@ -2,7 +2,10 @@
 
 ## Overview
 
-Quickly change which monitor your Wacom tablet is mapped to.
+<figure>
+    <img src="docs/assets/window.png" alt="The application window">
+    <figcaption>Quickly switch your Wacom tablet's mapped monitor.</figcaption>
+</figure>
 
 ## Build
 
