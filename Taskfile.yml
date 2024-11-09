@@ -1,0 +1,12 @@
+version: '3'
+
+tasks:
+  build-flatpak:
+    cmds:
+      - flatpak-builder --force-clean --user --install-deps-from=flathub --repo=repo --install build.flatpak config/io.github.irishpatrick.WacomDisplaySwitcher.yml
+    silent: true
+
+  publish-flatpak:
+    cmds:
+      - flatpak build-bundle repo WacomDisplaySwitcher.flatpak io.github.irishpatrick.WacomDisplaySwitcher --runtime=repo --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
+    silent: true

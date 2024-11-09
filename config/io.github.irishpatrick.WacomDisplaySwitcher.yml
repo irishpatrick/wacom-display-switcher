@@ -3,11 +3,16 @@ runtime: org.gnome.Platform
 runtime-version: '46'
 sdk: org.gnome.Sdk
 command: wacomswitcher
+finish-args:
+  - --socket=x11
+  - --socket=session-bus
 modules:
   - name: wacomswitcher
     buildsystem: cmake-ninja
     builddir: true
-    build-options: -DCMAKE_BUILD_TYPE=Release
+    config-opts: 
+      - '-DCMAKE_BUILD_TYPE=Release'
+      - '-DCMAKE_INSTALL_PREFIX=/app/bin'
     sources:
       - type: git
         url: https://github.com/irishpatrick/wacom-display-switcher
