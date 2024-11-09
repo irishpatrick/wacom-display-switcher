@@ -55,7 +55,11 @@ namespace wacom
         const auto devices = GetDevices();
         for (const auto &deviceName : devices)
         {
-            system(std::format("xsetwacom --set \"{}\" MapToOutput {}", deviceName, displayName).c_str());
+            const auto result = system(std::format("xsetwacom --set \"{}\" MapToOutput {}", deviceName, displayName).c_str());
+            if (result != 0)
+            {
+                std::cout << "todo handle error" << std::endl;
+            }
         }
     }
 

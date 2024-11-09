@@ -1,16 +1,19 @@
 #include "displays.hpp"
 #include "aabb.hpp"
 #include "wacom.hpp"
+#include "ui.hpp"
 
+#ifdef _WDS_ADWAITA
+#include <adwaita.h>
+#else
 #include <gtk/gtk.h>
-#include <stdio.h>
-#include <iostream>
-#include <cairo.h>
-#include <gdk/gdk.h>
+#endif
 #include <gdk/x11/gdkx.h>
-#include <X11/Xlib.h>
-#include <vector>
+
+#include <cstdio>
 #include <format>
+#include <iostream>
+#include <vector>
 
 static std::vector<std::pair<displays::DisplayMetrics, AABB>> displaysButtons;
 static int curDisplay = 0;
@@ -118,51 +121,49 @@ static void activate(GtkApplication *app, gpointer user_data)
     const auto height = displays::EstimateHeight(width);
 
     GtkWidget *window;
-    GtkWidget *box;
-    GtkWidget *canvas;
-    GtkWidget *label;
 
+    auto monitorChooser = ui::MonitorChooser(width, height, draw_function, G_CALLBACK(handle_canvas_click));
+
+// window
+#ifdef _WDS_ADWAITA
+    window = adw_application_window_new(app);
+#else
     window = gtk_application_window_new(app);
+#endif
     gtk_window_set_title(GTK_WINDOW(window), "Wacom Monitor Mapping Switcher");
     gtk_window_set_default_size(GTK_WINDOW(window), width, height);
     gtk_window_set_resizable(GTK_WINDOW(window), false);
-    gtk_window_present(GTK_WINDOW(window));
 
+#ifdef _WDS_ADWAITA
+    GtkWidget *toolbar_view = adw_toolbar_view_new();
+    GtkWidget *header_bar = adw_header_bar_new();
+    adw_toolbar_view_add_top_bar(ADW_TOOLBAR_VIEW(toolbar_view), header_bar);
+    adw_toolbar_view_set_content(ADW_TOOLBAR_VIEW(toolbar_view), monitorChooser);
+    adw_application_window_set_content(ADW_APPLICATION_WINDOW(window), toolbar_view);
+#else
+    gtk_window_set_child(GTK_WINDOW(window), monitorChooser);
+#endif
+
+    gtk_window_present(GTK_WINDOW(window));
     GdkSurface *native = gtk_native_get_surface(GTK_NATIVE(window));
     Window xw = gdk_x11_surface_get_xid(GDK_SURFACE(gtk_native_get_surface(GTK_NATIVE(window))));
     Display *xd = gdk_x11_display_get_xdisplay(gdk_display_get_default());
     XMoveWindow(xd, xw, 0, 0);
 
-    box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-    gtk_window_set_child(GTK_WINDOW(window), box);
-
-    canvas = gtk_drawing_area_new();
-    gtk_drawing_area_set_content_width(GTK_DRAWING_AREA(canvas), width);
-    gtk_drawing_area_set_content_height(GTK_DRAWING_AREA(canvas), height);
-    gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(canvas), draw_function, NULL, NULL);
-    gtk_box_append(GTK_BOX(box), canvas);
-
-    label = gtk_label_new("Press 'w' to move this window");
-    gtk_box_append(GTK_BOX(box), label);
-
-    GtkGesture *click = gtk_gesture_click_new();
-    g_signal_connect_object(click, "released", G_CALLBACK(handle_canvas_click), canvas, G_CONNECT_SWAPPED);
-    gtk_widget_add_controller(canvas, GTK_EVENT_CONTROLLER(click));
-
     GtkEventController *event_controller = gtk_event_controller_key_new();
-    g_signal_connect_object(event_controller, "key-released", G_CALLBACK(handle_keypress), canvas, G_CONNECT_SWAPPED);
+    g_signal_connect_object(event_controller, "key-released", G_CALLBACK(handle_keypress), monitorChooser, G_CONNECT_SWAPPED);
     gtk_widget_add_controller(window, GTK_EVENT_CONTROLLER(event_controller));
 }
 
 int main(int argc, char **argv)
 {
-    GtkApplication *app;
-    int status;
-
+#ifdef _WDS_ADWAITA
+    g_autoptr(AdwApplication) app = nullptr;
+    app = adw_application_new("org.gtk.example", G_APPLICATION_DEFAULT_FLAGS);
+#else
+    g_autoptr(GtkApplication) app = nullptr;
     app = gtk_application_new("org.gtk.example", G_APPLICATION_DEFAULT_FLAGS);
-    g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
-    status = g_application_run(G_APPLICATION(app), argc, argv);
-    g_object_unref(app);
-
-    return status;
+#endif
+    g_signal_connect(app, "activate", G_CALLBACK(activate), nullptr);
+    return g_application_run(G_APPLICATION(app), argc, argv);
 }
