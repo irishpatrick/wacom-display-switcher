@@ -33,4 +33,4 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE ${defs})
 target_include_directories(${PROJECT_NAME} PRIVATE ${incl})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${libs})
 
-install(TARGETS ${PROJECT_NAME} DESTINATION /usr/local/bin)
+install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX})
