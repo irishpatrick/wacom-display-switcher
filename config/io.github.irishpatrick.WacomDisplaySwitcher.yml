@@ -1,0 +1,14 @@
+id: io.github.irishpatrick.WacomDisplaySwitcher
+runtime: org.gnome.Platform
+runtime-version: '46'
+sdk: org.gnome.Sdk
+command: wacomswitcher
+modules:
+  - name: wacomswitcher
+    buildsystem: cmake-ninja
+    builddir: true
+    build-options: -DCMAKE_BUILD_TYPE=Release
+    sources:
+      - type: git
+        url: https://github.com/irishpatrick/wacom-display-switcher
+        branch: main
