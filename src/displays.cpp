@@ -1,8 +1,11 @@
 #include "displays.hpp"
 
+#include <libudev.h>
+#ifdef _WDS_X11
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/extensions/Xrandr.h>
+#endif
 
 #include <iostream>
 #include <format>
@@ -21,24 +24,70 @@ namespace displays
         if (gpuVendor.length() < 1)
         {
             gpuVendor = "unknown";
+            auto udevCtx = udev_new();
+            if (udevCtx == nullptr)
+            {
+                std::cout << "error: cannot create udev context" << std::endl;
+                // todo err
+            }
+            auto deviceIterator = udev_enumerate_new(udevCtx);
+            if (deviceIterator == nullptr)
+            {
+                std::cout << "error: cannot create udev enumerator" << std::endl;
+                // todo err
+            }
 
-            FILE *lspciOut = popen("lspci | grep VGA", "r");
-            size_t len = 0;
-            ssize_t read = 0;
-            char *line = nullptr;
-            while ((read = getline(&line, &len, lspciOut)) != -1)
+            udev_enumerate_add_match_subsystem(deviceIterator, "drm");
+            // udev_enumerate_add_match_property(deviceIterator, "DEVTYPE", "drm_minor");
+            udev_enumerate_add_match_sysname(deviceIterator, "card*");
+            const auto numDevices = udev_enumerate_scan_devices(deviceIterator);
+            if (numDevices < 0)
             {
-                auto work = std::string(line);
-                std::transform(work.begin(), work.end(), work.begin(), [](unsigned char c){ return std::tolower(c); });
-                if (work.find("nvidia") != std::string::npos)
+                std::cout << "error: cannot scan for devices" << std::endl;
+                // todo err
+            }
+
+            udev_list_entry *deviceEntry;
+            udev_list_entry_foreach(deviceEntry, udev_enumerate_get_list_entry(deviceIterator))
+            {
+                udev_device *dev = udev_device_new_from_syspath(udevCtx, udev_list_entry_get_name(deviceEntry));
+                deviceEntry = udev_list_entry_get_next(deviceEntry);
+
+                const char *name = udev_device_get_sysname(dev);
+                const char *type = udev_device_get_devtype(dev);
+                if (std::string(type) != "drm_minor")
                 {
-                    gpuVendor = "nvidia";
+                    udev_device_unref(dev);
+                    continue;
                 }
+
+                auto parent = udev_device_get_parent(dev);
+                const char *bootVga = udev_device_get_sysattr_value(parent, "boot_vga");
+                if (bootVga == nullptr)
+                {
+                    udev_device_unref(dev);
+                    continue;
+                }
+                if (std::string(bootVga) != "1")
+                {
+                    udev_device_unref(dev);
+                    continue;
+                }
+
+                const char *driver = udev_device_get_driver(parent);
+                if (driver == nullptr)
+                {
+                    udev_device_unref(dev);
+                    break;
+                }
+
+                gpuVendor = std::string(driver);
+                udev_device_unref(dev);
+                break;
             }
-            if (line)
-            {
-                free(line);
-            }
+
+            udev_enumerate_unref(deviceIterator);
+            udev_unref(udevCtx);
         }
 
         return gpuVendor;
@@ -85,11 +134,12 @@ namespace displays
                 {
                     const auto info = monitorInfo[k];
 
-                    metrics.emplace_back(k, XGetAtomName(disp, info.name), info.width, info.height, info.x, info.y);
+                    const char *name = XGetAtomName(disp, info.name);
+                    metrics.emplace_back(k, name, info.width, info.height, info.x, info.y);
                     metrics.back().SetNvidia(GetGPUVendor() == "nvidia");
+                    XFree((void*)name);
                 }
-
-                free(monitorInfo);
+                XRRFreeMonitors(monitorInfo);
             }
 
             XCloseDisplay(disp);
