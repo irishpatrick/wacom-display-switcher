@@ -1,5 +1,6 @@
-#include "displays.hpp"
 #include "aabb.hpp"
+#include "displays.hpp"
+#include "instancemutex.hpp"
 #include "wacom.hpp"
 #include "ui.hpp"
 
@@ -155,8 +156,19 @@ static void activate(GtkApplication *app, gpointer user_data)
     gtk_widget_add_controller(window, GTK_EVENT_CONTROLLER(event_controller));
 }
 
+void sig_handler(int sig)
+{
+    std::cout << "term" << std::endl;
+}
+
 int main(int argc, char **argv)
 {
+    InstanceMutex instance;
+    if (!instance.IsHeld())
+    {
+        return 0;
+    }
+
 #ifdef _WDS_ADWAITA
     g_autoptr(AdwApplication) app = nullptr;
     app = adw_application_new("org.gtk.example", G_APPLICATION_DEFAULT_FLAGS);
@@ -164,6 +176,9 @@ int main(int argc, char **argv)
     g_autoptr(GtkApplication) app = nullptr;
     app = gtk_application_new("org.gtk.example", G_APPLICATION_DEFAULT_FLAGS);
 #endif
+
+    signal(SIGTERM, sig_handler);
+
     g_signal_connect(app, "activate", G_CALLBACK(activate), nullptr);
     return g_application_run(G_APPLICATION(app), argc, argv);
 }

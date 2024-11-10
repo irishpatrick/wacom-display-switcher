@@ -12,7 +12,6 @@ modules:
     builddir: true
     config-opts: 
       - '-DCMAKE_BUILD_TYPE=Release'
-      - '-DCMAKE_INSTALL_PREFIX=/app/bin'
     sources:
       - type: git
         url: https://github.com/irishpatrick/wacom-display-switcher
