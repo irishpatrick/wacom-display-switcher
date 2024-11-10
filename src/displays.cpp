@@ -137,7 +137,7 @@ namespace displays
                     const char *name = XGetAtomName(disp, info.name);
                     metrics.emplace_back(k, name, info.width, info.height, info.x, info.y);
                     metrics.back().SetNvidia(GetGPUVendor() == "nvidia");
-                    XFree((void*)name);
+                    XFree((void *)name);
                 }
                 XRRFreeMonitors(monitorInfo);
             }
@@ -146,6 +146,31 @@ namespace displays
         }
 
         return std::move(metrics);
+    }
+
+    std::pair<int, int> QueryMousePosition()
+    {
+        Display *display = XOpenDisplay(nullptr);
+        const int numScreens = XScreenCount(display);
+        int rootX, rootY, winX, winY;
+        unsigned int maskReturn;
+        bool result;
+        for (auto i = 0; i < numScreens; ++i)
+        {
+            Screen *screen = XScreenOfDisplay(display, i);
+            Window window = XRootWindowOfScreen(screen);
+            result = XQueryPointer(display, window, &window, &window, &rootX, &rootY, &winX, &winY, &maskReturn);
+            if (result)
+            {
+                break;
+            }
+        }
+        if (!result)
+        {
+            return std::pair<int, int>(0, 0);
+        }
+
+        return std::pair<int, int>(rootX, rootY);
     }
 
     const std::vector<DisplayMetrics> &GetDisplays()

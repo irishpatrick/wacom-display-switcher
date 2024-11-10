@@ -110,7 +110,7 @@ static gboolean handle_keypress(GtkWidget *widget, guint keyval, guint keycode, 
     Display *xd = gdk_x11_display_get_xdisplay(gdk_display_get_default());
     XMoveWindow(xd, xw, displays[curDisplay].offsetX, 0);
 
-    return G_SOURCE_CONTINUE;
+        return G_SOURCE_CONTINUE;
 }
 
 static void activate(GtkApplication *app, gpointer user_data)
@@ -149,7 +149,8 @@ static void activate(GtkApplication *app, gpointer user_data)
     GdkSurface *native = gtk_native_get_surface(GTK_NATIVE(window));
     Window xw = gdk_x11_surface_get_xid(GDK_SURFACE(gtk_native_get_surface(GTK_NATIVE(window))));
     Display *xd = gdk_x11_display_get_xdisplay(gdk_display_get_default());
-    XMoveWindow(xd, xw, 0, 0);
+    const auto mouse = displays::QueryMousePosition();
+    XMoveWindow(xd, xw, mouse.first - 100, mouse.second - 100);
 
     GtkEventController *event_controller = gtk_event_controller_key_new();
     g_signal_connect_object(event_controller, "key-released", G_CALLBACK(handle_keypress), monitorChooser, G_CONNECT_SWAPPED);

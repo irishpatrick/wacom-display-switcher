@@ -33,6 +33,7 @@ namespace displays
 
     const std::string &GetGPUVendor();
     std::vector<DisplayMetrics> QueryDisplays();
+    std::pair<int, int> QueryMousePosition();
     const std::vector<DisplayMetrics> &GetDisplays();
     int EstimateHeight(int);
 
