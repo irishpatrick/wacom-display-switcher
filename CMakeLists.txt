@@ -4,6 +4,7 @@ project(wacomswitcher)
 
 option(USE_ADWAITA "use adwaita" OFF)
 set(WINDOW_SYSTEM "x11" CACHE STRING "x11 or wayland")
+set(APP_VERSION "noversion" CACHE STRING "app version")
 
 if (NOT ${WINDOW_SYSTEM} STREQUAL "x11" AND NOT ${WINDOW_SYSTEM} STREQUAL "wayland")
     message(FATAL_ERROR "unknown window system: ${WINDOW_SYSTEM}")
@@ -58,7 +59,7 @@ if (${USE_X11})
     )
 endif()
 
-set(defs "")
+set(defs _APP_VERSION="${APP_VERSION}")
 if (${USE_ADWAITA})
     pkg_check_modules(ADWAITA REQUIRED libadwaita-1)
     set(defs ${defs} _WDS_ADWAITA)
@@ -81,6 +82,7 @@ add_executable(${PROJECT_NAME}
     src/ui.cpp
     src/wacom.cpp
 )
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Werror)
 target_compile_definitions(${PROJECT_NAME} PRIVATE ${defs})
 target_include_directories(${PROJECT_NAME} PRIVATE ${incl})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${libs})

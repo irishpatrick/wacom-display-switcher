@@ -53,7 +53,6 @@ namespace displays
                 udev_device *dev = udev_device_new_from_syspath(udevCtx, udev_list_entry_get_name(deviceEntry));
                 deviceEntry = udev_list_entry_get_next(deviceEntry);
 
-                const char *name = udev_device_get_sysname(dev);
                 const char *type = udev_device_get_devtype(dev);
                 if (std::string(type) != "drm_minor")
                 {
@@ -145,7 +144,7 @@ namespace displays
             XCloseDisplay(disp);
         }
 
-        return std::move(metrics);
+        return metrics;
     }
 
     std::pair<int, int> QueryMousePosition()

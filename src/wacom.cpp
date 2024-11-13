@@ -45,9 +45,9 @@ namespace wacom
         {
             free(line);
         }
-        fclose(wacomOut);
+        pclose(wacomOut);
 
-        return std::move(devices);
+        return devices;
     }
 
     void SetDisplay(const std::string &displayName)

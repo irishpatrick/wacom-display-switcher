@@ -16,12 +16,15 @@
 #include <iostream>
 #include <vector>
 
+#ifndef _APP_VERSION
+#define _APP_VERSION "noversion"
+#endif
+
 static std::vector<std::pair<displays::DisplayMetrics, AABB>> displaysButtons;
 static int curDisplay = 0;
 
 static void drawMonitors(cairo_t *cr, int width, int height)
 {
-    const auto margin = 50;
     const auto padding = 10;
     const auto monitors = displays::GetDisplays();
     const auto spacing = 4;
@@ -37,6 +40,7 @@ static void drawMonitors(cairo_t *cr, int width, int height)
     const double scaleY = scaleX;
 
     displaysButtons.clear();
+    displaysButtons.reserve(monitors.size());
     int i = 0;
     for (const auto &monitor : monitors)
     {
@@ -48,11 +52,18 @@ static void drawMonitors(cairo_t *cr, int width, int height)
 
         displaysButtons.emplace_back(monitor, AABB(x, y, w, h));
 
-        cairo_set_source_rgb(cr, 0.7, 0.7, 0.7);
+        cairo_set_source_rgb(cr, 0, 8.0/255.0, 49.0/255.0);
         cairo_rectangle(cr, x, y, w, h);
         cairo_fill(cr);
-        cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
+        cairo_set_source_rgb(cr, 181.0/255.0, 209.0/255.0, 204.0/255.0);
         cairo_rectangle(cr, x + margin, y + margin, w - margin * 2, h - margin * 2);
+        cairo_fill(cr);
+
+        const auto inset = 50;
+        cairo_set_source_rgb(cr, 150.0/255.0, 191.0/255.0, 230.0/255.0);
+        cairo_move_to(cr, x + margin + inset * (w / h), y + margin + h - margin * 2);
+        cairo_line_to(cr, x + margin + w - margin * 2, y + margin + h - margin * 2);
+        cairo_line_to(cr, x + margin + w - margin * 2, y + margin + inset * (h / w));
         cairo_fill(cr);
 
         cairo_set_source_rgb(cr, 0.1, 0.1, 0.1);
@@ -105,12 +116,11 @@ static gboolean handle_keypress(GtkWidget *widget, guint keyval, guint keycode, 
     const auto displays = displays::GetDisplays();
     curDisplay = (curDisplay + 1) % displays.size();
 
-    GdkSurface *native = gtk_native_get_surface(GTK_NATIVE(window));
     Window xw = gdk_x11_surface_get_xid(GDK_SURFACE(gtk_native_get_surface(GTK_NATIVE(window))));
     Display *xd = gdk_x11_display_get_xdisplay(gdk_display_get_default());
     XMoveWindow(xd, xw, displays[curDisplay].offsetX, 0);
 
-        return G_SOURCE_CONTINUE;
+    return G_SOURCE_CONTINUE;
 }
 
 static void activate(GtkApplication *app, gpointer user_data)
@@ -146,7 +156,6 @@ static void activate(GtkApplication *app, gpointer user_data)
 #endif
 
     gtk_window_present(GTK_WINDOW(window));
-    GdkSurface *native = gtk_native_get_surface(GTK_NATIVE(window));
     Window xw = gdk_x11_surface_get_xid(GDK_SURFACE(gtk_native_get_surface(GTK_NATIVE(window))));
     Display *xd = gdk_x11_display_get_xdisplay(gdk_display_get_default());
     const auto mouse = displays::QueryMousePosition();
@@ -157,13 +166,18 @@ static void activate(GtkApplication *app, gpointer user_data)
     gtk_widget_add_controller(window, GTK_EVENT_CONTROLLER(event_controller));
 }
 
-void sig_handler(int sig)
-{
-    std::cout << "term" << std::endl;
-}
-
 int main(int argc, char **argv)
 {
+    if (argc > 1)
+    {
+        const auto flag = std::string(argv[1]);
+        if (flag == "--version" || flag == "-v")
+        {
+            std::cout << _APP_VERSION << std::endl;
+            exit(0);
+        }
+    }
+
     InstanceMutex instance;
     if (!instance.IsHeld())
     {
@@ -177,8 +191,6 @@ int main(int argc, char **argv)
     g_autoptr(GtkApplication) app = nullptr;
     app = gtk_application_new("org.gtk.example", G_APPLICATION_DEFAULT_FLAGS);
 #endif
-
-    signal(SIGTERM, sig_handler);
 
     g_signal_connect(app, "activate", G_CALLBACK(activate), nullptr);
     return g_application_run(G_APPLICATION(app), argc, argv);
