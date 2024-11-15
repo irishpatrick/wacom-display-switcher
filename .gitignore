@@ -33,8 +33,12 @@
 
 # Build directories
 build*/*
+cmake-build-*/*
 
 # flatpak
 .flatpak-builder
 
 artifacts/*
+
+# JetBrains
+.idea

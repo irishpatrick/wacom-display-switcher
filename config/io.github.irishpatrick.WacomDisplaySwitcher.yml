@@ -10,7 +10,7 @@ modules:
   - name: wacomswitcher
     buildsystem: cmake-ninja
     builddir: true
-    config-opts: 
+    config-opts:
       - '-DCMAKE_BUILD_TYPE=Release'
     sources:
       - type: git

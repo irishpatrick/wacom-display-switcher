@@ -4,19 +4,16 @@
 #include <string>
 #include <vector>
 
-namespace displays
-{
+namespace displays {
 
-    class DisplayMetrics
-    {
+    class DisplayMetrics {
     public:
         DisplayMetrics(int index, std::string name, int width, int height, int offsetX, int offsetY)
-            : index(index), name(name), width(width), height(height), offsetX(offsetX), offsetY(offsetY) {}
+                : index(index), name(name), width(width), height(height), offsetX(offsetX), offsetY(offsetY) {}
 
         std::string GetName() const;
 
-        void SetNvidia(bool val)
-        {
+        void SetNvidia(bool val) {
             nvidia = val;
         }
 
@@ -32,9 +29,13 @@ namespace displays
     };
 
     const std::string &GetGPUVendor();
+
     std::vector<DisplayMetrics> QueryDisplays();
+
     std::pair<int, int> QueryMousePosition();
+
     const std::vector<DisplayMetrics> &GetDisplays();
+
     int EstimateHeight(int);
 
 }

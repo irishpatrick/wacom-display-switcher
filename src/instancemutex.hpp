@@ -3,20 +3,20 @@
 
 #include <string>
 
-class InstanceMutex
-{
+class InstanceMutex {
 public:
-    InstanceMutex()
-    {
+    InstanceMutex() {
         Acquire();
     }
-    ~InstanceMutex()
-    {
+
+    ~InstanceMutex() {
         Release();
     }
 
     void Acquire();
+
     void Release();
+
     bool IsHeld() const;
 
 private:

@@ -8,10 +8,8 @@
 #include <sys/file.h>
 #include <unistd.h>
 
-void InstanceMutex::Acquire()
-{
-    if (acquired)
-    {
+void InstanceMutex::Acquire() {
+    if (acquired) {
         return;
     }
 
@@ -24,16 +22,13 @@ void InstanceMutex::Acquire()
 
     fn = std::format("{}/.wds.lock", home);
     fd = open(fn.c_str(), O_CREAT | O_RDWR | O_APPEND, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-    if (fd == -1)
-    {
+    if (fd == -1) {
         std::cout << "error " << strerror(errno) << std::endl;
         return;
     }
     const int lockErr = flock(fd, LOCK_EX | LOCK_NB);
-    if (lockErr == -1)
-    {
-        if (errno == EAGAIN)
-        {
+    if (lockErr == -1) {
+        if (errno == EAGAIN) {
             return;
         }
         std::cout << "error " << strerror(errno) << std::endl;
@@ -43,16 +38,13 @@ void InstanceMutex::Acquire()
     acquired = true;
 }
 
-void InstanceMutex::Release()
-{
-    if (!acquired)
-    {
+void InstanceMutex::Release() {
+    if (!acquired) {
         return;
     }
 
     const int lockErr = flock(fd, LOCK_UN);
-    if (lockErr == -1)
-    {
+    if (lockErr == -1) {
         std::cout << "error " << strerror(errno) << std::endl;
         return;
     }
@@ -63,7 +55,6 @@ void InstanceMutex::Release()
     acquired = false;
 }
 
-bool InstanceMutex::IsHeld() const
-{
+bool InstanceMutex::IsHeld() const {
     return acquired;
 }

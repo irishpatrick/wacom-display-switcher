@@ -1,9 +1,7 @@
 #include "ui.hpp"
 
-namespace ui
-{
-    GtkWidget *MonitorChooser(int width, int height, GtkDrawingAreaDrawFunc drawCallback, GCallback clickCallback)
-    {
+namespace ui {
+    GtkWidget *MonitorChooser(int width, int height, GtkDrawingAreaDrawFunc drawCallback, GCallback clickCallback) {
         GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 
         GtkWidget *canvas = gtk_drawing_area_new();

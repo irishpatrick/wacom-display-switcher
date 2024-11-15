@@ -13,6 +13,8 @@
 
 - gtk4
 - X11
+- Xrandr
+- libwacom
 - xsetwacom
 
 ### Instructions

@@ -4,10 +4,10 @@
 #include <string>
 #include <vector>
 
-namespace wacom
-{
+namespace wacom {
 
     std::vector<std::string> GetDevices();
+
     void SetDisplay(const std::string &);
 
 }

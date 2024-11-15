@@ -1,63 +1,85 @@
 #include "wacom.hpp"
 
 #include <cstdlib>
-#include <cstdio>
 #include <format>
 #include <iostream>
 #include <algorithm>
 #include <cctype>
-#include <locale>
+#include <libudev.h>
 
-inline void ltrim(std::string &s)
-{
-    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch)
-                                    { return !std::isspace(ch); }));
+inline void ltrim(std::string &s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) { return !std::isspace(ch); }));
 }
 
-inline void rtrim(std::string &s)
-{
-    s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch)
-                         { return !std::isspace(ch); })
-                .base(),
+inline void rtrim(std::string &s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) { return !std::isspace(ch); })
+                    .base(),
             s.end());
 }
 
-namespace wacom
-{
+namespace wacom {
 
-    std::vector<std::string> GetDevices()
-    {
+    std::vector<std::string> GetDevices() {
         std::vector<std::string> devices;
 
-        FILE *wacomOut = popen("xsetwacom --list devices", "r");
-        size_t len = 0;
-        ssize_t read = 0;
-        char *line = nullptr;
-        while ((read = getline(&line, &len, wacomOut)) != -1)
-        {
-            const auto work = std::string(line);
-            auto name = work.substr(0, work.find("id: "));
-            ltrim(name);
-            rtrim(name);
-            devices.push_back(name);
+        auto udevCtx = udev_new();
+        if (udevCtx == nullptr) {
+            // todo err
         }
-        if (line)
-        {
-            free(line);
+        auto deviceIterator = udev_enumerate_new(udevCtx);
+        if (!deviceIterator) {
+            // todo err
         }
-        pclose(wacomOut);
+        udev_enumerate_add_match_subsystem(deviceIterator, "input");
+        udev_enumerate_add_match_sysname(deviceIterator, "event*");
+        const auto numDevices = udev_enumerate_scan_devices(deviceIterator);
+        if (numDevices < 0) {
+            std::cout << "scan err" << std::endl;
+            // todo err
+            return devices;
+        }
+
+        udev_list_entry *deviceEntry;
+        udev_list_entry_foreach(deviceEntry, udev_enumerate_get_list_entry(deviceIterator)) {
+            auto curDevice = udev_device_new_from_syspath(udevCtx, udev_list_entry_get_name(deviceEntry));
+            udev_list_entry *propsEntry;
+
+            const auto isTablet = udev_device_get_property_value(curDevice, "ID_INPUT_TABLET") != nullptr;
+            const auto isTabletPad = udev_device_get_property_value(curDevice, "ID_INPUT_TABLET_PAD") != nullptr;
+            const auto isTouchpad = udev_device_get_property_value(curDevice, "ID_INPUT_TOUCHPAD") != nullptr;
+            if (!isTablet && !isTabletPad && !isTouchpad) {
+                udev_device_unref(curDevice);
+                continue;
+            }
+//            udev_list_entry_foreach(propsEntry, udev_device_get_properties_list_entry(curDevice)) {
+//                const auto name = udev_list_entry_get_name(propsEntry);
+//                const auto val = udev_list_entry_get_value(propsEntry);
+//            }
+            const auto name = udev_device_get_property_value(curDevice, "NAME");
+            const auto parentDevice = udev_device_get_parent(curDevice);
+            const auto parentName = udev_device_get_property_value(parentDevice, "NAME");
+            std::string nameStr;
+            if (name == nullptr) {
+                nameStr = std::string(parentName);
+                nameStr = nameStr.substr(1, nameStr.length() - 2);
+            } else {
+                nameStr = std::string(parentName);
+                nameStr = nameStr.substr(1, nameStr.length() - 2);;
+            }
+            udev_device_unref(curDevice);
+
+            devices.emplace_back(nameStr + " stylus"); // xsetwacom hack
+        }
 
         return devices;
     }
 
-    void SetDisplay(const std::string &displayName)
-    {
+    void SetDisplay(const std::string &displayName) {
         const auto devices = GetDevices();
-        for (const auto &deviceName : devices)
-        {
-            const auto result = system(std::format("xsetwacom --set \"{}\" MapToOutput {}", deviceName, displayName).c_str());
-            if (result != 0)
-            {
+        for (const auto &deviceName: devices) {
+            const auto result = system(
+                    std::format("xsetwacom --set \"{}\" MapToOutput {}", deviceName, displayName).c_str());
+            if (result != 0) {
                 std::cout << "todo handle error" << std::endl;
             }
         }

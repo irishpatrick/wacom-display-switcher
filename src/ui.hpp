@@ -3,8 +3,7 @@
 
 #include <gtk/gtk.h>
 
-namespace ui
-{
+namespace ui {
     GtkWidget *MonitorChooser(int, int, GtkDrawingAreaDrawFunc, GCallback);
 }
 
