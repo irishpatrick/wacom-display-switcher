@@ -10,3 +10,11 @@ tasks:
     cmds:
       - flatpak build-bundle repo WacomDisplaySwitcher.flatpak io.github.irishpatrick.WacomDisplaySwitcher --runtime=repo --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
     silent: true
+
+  release:
+    cmds:
+      - docker build . -t wacom-display-switcher-build
+      - id=$(docker create wacom-display-switcher-build) ; docker cp $id:/release.tar ./ ; docker rm $id
+      - tar xf ./release.tar
+      - rm ./release.tar
+    silent: true
