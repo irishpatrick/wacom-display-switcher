@@ -5,14 +5,13 @@ name: CMake on a single platform
 on:
   push:
     branches: [ "main" ]
+    inputs:
+      version:
+        description: 'App version'
+        required: true
+        default: ${{github.sha}}
   pull_request:
     branches: [ "main" ]
-
-inputs:
-  version:
-    description: 'App version'
-    required: true
-    default: ${{github.sha}}
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
