@@ -23,10 +23,10 @@ endif ()
 
 include(FindPkgConfig)
 pkg_check_modules(GTK4 REQUIRED gtk4)
-pkg_check_modules(WACOM REQUIRED libwacom)
 if (${USE_X11})
     pkg_check_modules(XRANDR REQUIRED xrandr)
     pkg_check_modules(XLIB REQUIRED x11)
+    pkg_check_modules(XINPUT REQUIRED xi)
 endif ()
 if (${USE_WAYLAND})
     pkg_check_modules(LIBINPUT REQUIRED libinput)
@@ -36,11 +36,11 @@ pkg_check_modules(UDEV REQUIRED libudev)
 set(incl
         ${GTK4_INCLUDE_DIRS}
         ${UDEV_INCLUDE_DIRS}
-        ${WACOM_INCLUDE_DIRS}
 )
 if (${USE_X11})
     set(incl
             ${incl}
+            ${XINPUT_INCLUDE_DIRS}
             ${XLIB_INCLUDE_DIRS}
             ${XRANDR_INCLUDE_DIRS}
     )
@@ -49,11 +49,11 @@ endif ()
 set(libs
         ${GTK4_LIBRARIES}
         ${UDEV_LIBRARIES}
-        ${WACOM_LIBRARIES}
 )
 if (${USE_X11})
     set(libs
             ${libs}
+            ${XINPUT_LIBRARIES}
             ${XLIB_LIBRARIES}
             ${XRANDR_LIBRARIES}
     )

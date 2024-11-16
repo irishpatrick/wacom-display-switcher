@@ -1,5 +1,8 @@
 #include "wacom.hpp"
 
+#include <X11/extensions/XInput.h>
+
+#include <cassert>
 #include <cstdlib>
 #include <format>
 #include <iostream>
@@ -20,7 +23,8 @@ inline void rtrim(std::string &s) {
 namespace wacom {
 
     std::vector<std::string> GetDevices() {
-        std::vector<std::string> devices;
+        std::vector<std::string> deviceIds;
+        std::vector<std::string> deviceNames;
 
         auto udevCtx = udev_new();
         if (udevCtx == nullptr) {
@@ -36,13 +40,11 @@ namespace wacom {
         if (numDevices < 0) {
             std::cout << "scan err" << std::endl;
             // todo err
-            return devices;
         }
 
         udev_list_entry *deviceEntry;
         udev_list_entry_foreach(deviceEntry, udev_enumerate_get_list_entry(deviceIterator)) {
             auto curDevice = udev_device_new_from_syspath(udevCtx, udev_list_entry_get_name(deviceEntry));
-            udev_list_entry *propsEntry;
 
             const auto isTablet = udev_device_get_property_value(curDevice, "ID_INPUT_TABLET") != nullptr;
             const auto isTabletPad = udev_device_get_property_value(curDevice, "ID_INPUT_TABLET_PAD") != nullptr;
@@ -51,10 +53,7 @@ namespace wacom {
                 udev_device_unref(curDevice);
                 continue;
             }
-//            udev_list_entry_foreach(propsEntry, udev_device_get_properties_list_entry(curDevice)) {
-//                const auto name = udev_list_entry_get_name(propsEntry);
-//                const auto val = udev_list_entry_get_value(propsEntry);
-//            }
+
             const auto name = udev_device_get_property_value(curDevice, "NAME");
             const auto parentDevice = udev_device_get_parent(curDevice);
             const auto parentName = udev_device_get_property_value(parentDevice, "NAME");
@@ -68,17 +67,33 @@ namespace wacom {
             }
             udev_device_unref(curDevice);
 
-            devices.emplace_back(nameStr + " stylus"); // xsetwacom hack
+            deviceNames.emplace_back(nameStr + " stylus"); // xsetwacom hack
         }
 
-        return devices;
+        Display *disp = XOpenDisplay(nullptr);
+        int numInputDevices;
+        auto inputDevices = XListInputDevices(disp, &numInputDevices);
+        for (auto i = 0; i < numInputDevices; ++i)
+        {
+            const auto xdev = inputDevices + i;
+            assert(xdev != nullptr);
+            if (std::string(xdev->name) == deviceNames[0])
+            {
+                deviceIds.emplace_back(std::format("{}", xdev->id));
+                break;
+            }
+        }
+
+        XCloseDisplay(disp);
+
+        return deviceIds;
     }
 
     void SetDisplay(const std::string &displayName) {
         const auto devices = GetDevices();
         for (const auto &deviceName: devices) {
             const auto result = system(
-                    std::format("xsetwacom --set \"{}\" MapToOutput {}", deviceName, displayName).c_str());
+                    std::format("xsetwacom --set {} MapToOutput {}", deviceName, displayName).c_str());
             if (result != 0) {
                 std::cout << "todo handle error" << std::endl;
             }
