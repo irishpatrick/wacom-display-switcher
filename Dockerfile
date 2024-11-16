@@ -11,4 +11,4 @@ RUN cmake --build ./build --config Release ; cmake --install ./build
 
 FROM build AS pack
 
-RUN strip /artifacts/bin/* ; tar cf /release.tar /artifacts
+RUN strip $(find /artifacts -type f -executable) ; tar cf /release.tar /artifacts
