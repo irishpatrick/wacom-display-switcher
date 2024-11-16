@@ -13,7 +13,6 @@
 
 - gtk4
 - X11
-- xsetwacom
 
 ### Instructions
 

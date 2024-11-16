@@ -15,7 +15,6 @@
 #include <gdk/x11/gdkx.h>
 
 #include <cstdio>
-#include <format>
 #include <iostream>
 #include <vector>
 
@@ -88,7 +87,7 @@ static gboolean handle_canvas_click(GtkWidget *widget, int n_press, double x, do
         const auto name = nameBtnPair.first;
         const auto btn = nameBtnPair.second;
         if (btn.intersects(x, y)) {
-            wacom::SetDisplay(name.GetName());
+            wacom::SetDisplay(name);
             gtk_window_close(GTK_WINDOW(gtk_widget_get_root(GTK_WIDGET(widget))));
             break;
         }
