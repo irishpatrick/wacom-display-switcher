@@ -63,7 +63,7 @@ namespace wacom {
         const auto inputDevices = XListInputDevices(disp, &numInputDevices);
         for (auto i = 0; i < numInputDevices; ++i) {
             const auto xDev = inputDevices + i;
-            assert(xdev != nullptr);
+            assert(xDev != nullptr);
             if (std::string(xDev->name) == deviceNames[0]) {
                 deviceIds.emplace_back(std::format("{}", xDev->id));
                 break;
