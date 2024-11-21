@@ -16,11 +16,11 @@
 
 namespace displays {
 
-    static std::string gpuVendor = "";
+    static std::string gpuVendor;
     static std::vector<DisplayMetrics> cachedMetrics;
 
     const std::string &GetGPUVendor() {
-        if (gpuVendor.length() < 1) {
+        if (gpuVendor.empty()) {
             gpuVendor = "unknown";
             auto udevCtx = udev_new();
             if (udevCtx == nullptr) {
@@ -82,18 +82,6 @@ namespace displays {
         return gpuVendor;
     }
 
-    std::string DisplayMetrics::str() const {
-        return std::format("{}: {},{},{},{}", this->name, this->offsetX, this->offsetY, this->width, this->height);
-    }
-
-    std::string DisplayMetrics::GetName() const {
-        if (this->nvidia) {
-            return std::format("HEAD-{}", this->index);
-        }
-
-        return this->name;
-    }
-
     std::vector<DisplayMetrics> QueryDisplays() {
         std::vector<DisplayMetrics> metrics;
 
@@ -144,14 +132,14 @@ namespace displays {
             }
         }
         if (!result) {
-            return std::pair<int, int>(0, 0);
+            return {0, 0};
         }
 
-        return std::pair<int, int>(rootX, rootY);
+        return {rootX, rootY};
     }
 
     const std::vector<DisplayMetrics> &GetDisplays() {
-        if (cachedMetrics.size() == 0) {
+        if (cachedMetrics.empty()) {
             cachedMetrics = QueryDisplays();
         }
 
@@ -159,7 +147,7 @@ namespace displays {
     }
 
     int EstimateHeight(int width) {
-        const auto displays = GetDisplays();
+        const auto &displays = GetDisplays();
 
         std::pair<int, int> min;
         std::pair<int, int> max;

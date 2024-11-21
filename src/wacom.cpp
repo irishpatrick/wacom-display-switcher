@@ -10,24 +10,23 @@
 
 namespace wacom {
 
-    std::vector<std::string> GetDevices() {
+    std::expected<std::vector<std::string>, Error> GetDevices() {
         std::vector<std::string> deviceIds;
         std::vector<std::string> deviceNames;
 
         auto udevCtx = udev_new();
         if (udevCtx == nullptr) {
-            // todo err
+            return std::unexpected(Error(Error::GET_DEVICES_ERROR, "cannot get udev context"));
         }
         auto deviceIterator = udev_enumerate_new(udevCtx);
         if (!deviceIterator) {
-            // todo err
+            return std::unexpected(Error(Error::GET_DEVICES_ERROR, "cannot iterate devices"));
         }
         udev_enumerate_add_match_subsystem(deviceIterator, "input");
         udev_enumerate_add_match_sysname(deviceIterator, "event*");
         const auto numDevices = udev_enumerate_scan_devices(deviceIterator);
         if (numDevices < 0) {
-            std::cout << "scan err" << std::endl;
-            // todo err
+            return std::unexpected(Error(Error::GET_DEVICES_ERROR, "cannot scan devices"));
         }
 
         udev_list_entry *deviceEntry;
@@ -48,11 +47,10 @@ namespace wacom {
             std::string nameStr;
             if (name == nullptr) {
                 nameStr = std::string(parentName);
-                nameStr = nameStr.substr(1, nameStr.length() - 2);
             } else {
-                nameStr = std::string(parentName);
-                nameStr = nameStr.substr(1, nameStr.length() - 2);;
+                nameStr = std::string(name);
             }
+            nameStr = nameStr.substr(1, nameStr.length() - 2);
             udev_device_unref(curDevice);
 
             deviceNames.emplace_back(nameStr + " stylus"); // xsetwacom hack
@@ -75,14 +73,14 @@ namespace wacom {
         return deviceIds;
     }
 
-    static void setMatrix(const displays::DisplayMetrics &metrics, const std::string &devIdStr) {
+    static std::optional<Error> setMatrix(const displays::DisplayMetrics &metrics, const std::string &devIdStr) {
         Display *dpy = XOpenDisplay(nullptr); // todo err
         Atom matrixProperty = XInternAtom(dpy, "Coordinate Transformation Matrix", True); // todo err
 
         char *end;
         const auto devId = strtol(devIdStr.c_str(), &end, 10);
         if (*end != '\0') {
-            // todo err
+            return Error(Error::SET_MATRIX_ERROR, "malformed dev id");
         }
 
         XDevice *dev = XOpenDevice(dpy, devId);
@@ -90,15 +88,15 @@ namespace wacom {
         const auto fullWidth = DisplayWidth(dpy, DefaultScreen(dpy));
         const auto fullHeight = DisplayHeight(dpy, DefaultScreen(dpy));
 
-        const float x = double(metrics.offsetX) / fullWidth;
-        const float y = double(metrics.offsetY) / fullHeight;
-        const float w = double(metrics.width) / fullWidth;
-        const float h = double(metrics.height) / fullHeight;
+        const float x = float(metrics.offsetX) / float(fullWidth);
+        const float y = float(metrics.offsetY) / float(fullHeight);
+        const float w = float(metrics.width) / float(fullWidth);
+        const float h = float(metrics.height) / float(fullHeight);
 
         float matrix[9] = {w, 0, x, 0, h, y, 0, 0, 1};
-        long xmatrix[9] = {0};
+        long xMatrix[9] = {0};
         for (auto i = 0; i < 9; ++i) {
-            *(float *) (xmatrix + i) = matrix[i];
+            *(float *) (xMatrix + i) = matrix[i];
         }
         unsigned long itemLen;
         unsigned long unreadBytes;
@@ -108,21 +106,30 @@ namespace wacom {
         XGetDeviceProperty(dpy, dev, matrixProperty, 0, 9, False, AnyPropertyType, &type, &format, &itemLen,
                            &unreadBytes, (unsigned char **) &existingMatrix);
         if (itemLen != 9 || format != 32 || unreadBytes > 0) {
-            std::cout << "bad format" << std::endl;
             XFree(existingMatrix);
             XFlush(dpy);
-            return;
+            return Error(Error::SET_MATRIX_ERROR, "unexpected matrix format");
         }
 
-        XChangeDeviceProperty(dpy, dev, matrixProperty, type, format, PropModeReplace, (unsigned char *) xmatrix, 9);
+        XChangeDeviceProperty(dpy, dev, matrixProperty, type, format, PropModeReplace, (unsigned char *) xMatrix, 9);
         XFree(existingMatrix);
         XFlush(dpy);
+
+        return std::nullopt;
     }
 
-    void SetDisplay(const displays::DisplayMetrics &metrics) {
+    std::optional<Error> SetDisplay(const displays::DisplayMetrics &metrics) {
         const auto devices = GetDevices();
-        for (const auto &deviceName: devices) {
-            setMatrix(metrics, deviceName);
+        if (!devices) {
+            return devices.error();
         }
+        for (const auto &deviceName: *devices) {
+            const auto err = setMatrix(metrics, deviceName);
+            if (err) {
+                return *err;
+            }
+        }
+
+        return std::nullopt;
     }
 } // namespace wacom

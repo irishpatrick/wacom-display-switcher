@@ -3,14 +3,36 @@
 
 #include "displays.hpp"
 
+#include <expected>
+#include <optional>
 #include <string>
 #include <vector>
 
 namespace wacom {
 
-    std::vector<std::string> GetDevices();
+    class Error {
+    public:
+        explicit Error(std::string_view m = "", std::string dt = "")
+                : message(m), detail(std::move(dt)) {}
 
-    void SetDisplay(const displays::DisplayMetrics &);
+        explicit operator bool() const {
+            return !message.empty();
+        }
+
+        std::string message;
+        std::string detail;
+
+        constexpr static std::string_view GET_DEVICES_ERROR = "failed to get devices";
+        constexpr static std::string_view SET_MATRIX_ERROR = "failed to set matrix";
+    };
+
+    inline bool operator==(const Error &lhs, const std::string_view &rhs) {
+        return lhs.message == rhs;
+    }
+
+    std::expected<std::vector<std::string>, Error> GetDevices();
+
+    std::optional<Error> SetDisplay(const displays::DisplayMetrics &);
 
 }
 

@@ -11,8 +11,6 @@ namespace displays {
         DisplayMetrics(int index, std::string name, int width, int height, int offsetX, int offsetY)
                 : index(index), name(name), width(width), height(height), offsetX(offsetX), offsetY(offsetY) {}
 
-        std::string GetName() const;
-
         void SetNvidia(bool val) {
             nvidia = val;
         }
@@ -24,8 +22,6 @@ namespace displays {
         int offsetX;
         int offsetY;
         bool nvidia = true;
-
-        std::string str() const;
     };
 
     const std::string &GetGPUVendor();

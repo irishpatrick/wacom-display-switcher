@@ -1,3 +1,4 @@
+#include <iostream>
 #include "ui.hpp"
 
 namespace ui {
@@ -18,5 +19,18 @@ namespace ui {
         gtk_widget_add_controller(canvas, GTK_EVENT_CONTROLLER(click));
 
         return box;
+    }
+
+    void errorPopupCallback(GObject *sourceObject, GAsyncResult *result, gpointer data) {
+        GError *error;
+        gtk_alert_dialog_choose_finish(GTK_ALERT_DIALOG(sourceObject), result, &error);
+        exit(1);
+    }
+
+    void ErrorPopup(GtkWindow *parent, const std::string &message) {
+        auto dialog = gtk_alert_dialog_new("Error:\n\n%s", message.c_str());
+        const char *const labels[] = {"Ok", nullptr};
+        gtk_alert_dialog_set_buttons(dialog, labels);
+        gtk_alert_dialog_choose(dialog, parent, nullptr, errorPopupCallback, nullptr);
     }
 } // namespace ui

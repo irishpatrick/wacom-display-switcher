@@ -14,6 +14,7 @@
 
 #include <gdk/x11/gdkx.h>
 
+#include <cassert>
 #include <cstdio>
 #include <iostream>
 #include <vector>
@@ -25,9 +26,9 @@
 static std::vector<std::pair<displays::DisplayMetrics, AABB>> displaysButtons;
 static int curDisplay = 0;
 
-static void drawMonitors(cairo_t *cr, int width, int height) {
+static void drawMonitors(cairo_t *cr, int width) {
     const auto padding = 10;
-    const auto monitors = displays::GetDisplays();
+    const auto &monitors = displays::GetDisplays();
     const auto spacing = 4;
     std::pair<int, int> min;
     std::pair<int, int> max;
@@ -79,15 +80,28 @@ static void drawMonitors(cairo_t *cr, int width, int height) {
 }
 
 static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width, int height, gpointer data) {
-    drawMonitors(cr, width, height);
+    (void) area;
+    (void) data;
+    (void) height;
+
+    drawMonitors(cr, width);
 }
 
 static gboolean handle_canvas_click(GtkWidget *widget, int n_press, double x, double y, GtkGestureClick *gesture) {
+    (void) n_press;
+    (void) gesture;
+
     for (const auto &nameBtnPair: displaysButtons) {
         const auto name = nameBtnPair.first;
         const auto btn = nameBtnPair.second;
         if (btn.intersects(x, y)) {
-            wacom::SetDisplay(name);
+            const auto err = wacom::SetDisplay(name);
+            if (err) {
+                GtkWindow *window = GTK_WINDOW(gtk_widget_get_root(GTK_WIDGET(widget)));
+                assert(window != nullptr);
+                ui::ErrorPopup(window, err->message);
+                return G_SOURCE_CONTINUE;
+            }
             gtk_window_close(GTK_WINDOW(gtk_widget_get_root(GTK_WIDGET(widget))));
             break;
         }
@@ -98,7 +112,13 @@ static gboolean handle_canvas_click(GtkWidget *widget, int n_press, double x, do
 
 static gboolean handle_keypress(GtkWidget *widget, guint keyval, guint keycode, GdkModifierType state,
                                 GtkEventControllerKey *event_controller) {
+    (void) keycode;
+    (void) state;
+    (void) event_controller;
+
     GtkWindow *window = GTK_WINDOW(gtk_widget_get_root(GTK_WIDGET(widget)));
+    assert(window != nullptr);
+
     if (keyval == GDK_KEY_Escape) {
         gtk_window_close(window);
         return G_SOURCE_CONTINUE;
@@ -107,20 +127,27 @@ static gboolean handle_keypress(GtkWidget *widget, guint keyval, guint keycode, 
         return G_SOURCE_CONTINUE;
     }
 
-    const auto displays = displays::GetDisplays();
-    curDisplay = (curDisplay + 1) % displays.size();
+    const auto &displays = displays::GetDisplays();
+    if (displays.empty()) {
+        ui::ErrorPopup(GTK_WINDOW(window), "Error fetching displays");
+    }
+    curDisplay = (curDisplay + 1) % int(displays.size());
 
     Window xw = gdk_x11_surface_get_xid(GDK_SURFACE(gtk_native_get_surface(GTK_NATIVE(window))));
+    assert(xw >= 0);
     Display *xd = gdk_x11_display_get_xdisplay(gdk_display_get_default());
+    assert(xd != nullptr);
     XMoveWindow(xd, xw, displays[curDisplay].offsetX, 0);
 
     return G_SOURCE_CONTINUE;
 }
 
 static void activate(GtkApplication *app, gpointer user_data) {
-    const auto monitors = displays::GetDisplays();
-    const auto minWidth = 200;
-    const auto monitorWidth = monitors.size() * 100;
+    (void) user_data;
+
+    const auto &monitors = displays::GetDisplays();
+    const int minWidth = 200;
+    const auto monitorWidth = int(monitors.size()) * 100;
     const auto width = minWidth + monitorWidth;
     const auto height = displays::EstimateHeight(width);
 
@@ -150,7 +177,9 @@ static void activate(GtkApplication *app, gpointer user_data) {
 
     gtk_window_present(GTK_WINDOW(window));
     Window xw = gdk_x11_surface_get_xid(GDK_SURFACE(gtk_native_get_surface(GTK_NATIVE(window))));
+    assert(xw >= 0);
     Display *xd = gdk_x11_display_get_xdisplay(gdk_display_get_default());
+    assert(xd != nullptr);
     const auto mouse = displays::QueryMousePosition();
     XMoveWindow(xd, xw, mouse.first - 100, mouse.second - 100);
 
@@ -170,8 +199,14 @@ int main(int argc, char **argv) {
     }
 
     InstanceMutex instance;
-    if (!instance.IsHeld()) {
-        return 0;
+    const auto err = instance.IsHeld();
+    if (err) {
+        if (*err == InstanceMutexError::ALREADY_HELD) {
+            return 0;
+        }
+
+        std::cerr << err->message << std::endl;
+        return 1;
     }
 
 #ifdef _WDS_ADWAITA

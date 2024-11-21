@@ -10,7 +10,7 @@ if (NOT ${WINDOW_SYSTEM} STREQUAL "x11" AND NOT ${WINDOW_SYSTEM} STREQUAL "wayla
     message(FATAL_ERROR "unknown window system: ${WINDOW_SYSTEM}")
 endif ()
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 
 set(USE_X11 0)
 set(USE_WAYLAND 0)
