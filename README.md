@@ -11,7 +11,7 @@
 
 ### Requirements
 
-- Ubuntu >=18.04
+- Ubuntu >=21.04
 
 ### Instructions
 - Download the latest executable from the releases page.
