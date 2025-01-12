@@ -1,6 +1,6 @@
 FROM ubuntu:24.04 AS base
 
-RUN apt update ; apt install -y build-essential cmake ninja-build libgtk-4-dev libx11-dev libxrandr-dev libwacom-dev
+RUN apt update ; apt install -y build-essential cmake ninja-build libgtk-4-dev libx11-dev libxrandr-dev libudev-dev
 
 FROM base AS build
 
