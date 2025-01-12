@@ -11,7 +11,7 @@
 
 ### Requirements
 
-- Ubuntu >=22.04
+- Ubuntu >=24.04
 
 ### Instructions
 - Download the latest executable from the releases page.
