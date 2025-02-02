@@ -38,7 +38,9 @@ cmake-build-*/*
 # flatpak
 .flatpak-builder
 
+# artifacts
 artifacts/*
+*.tar.gz
 
 # JetBrains
 .idea

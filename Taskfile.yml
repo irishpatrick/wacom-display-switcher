@@ -1,5 +1,9 @@
 version: '3'
 
+env:
+  VERSION: 0.6.0-alpha
+  NAME: wacomswitcher
+
 tasks:
   build-flatpak:
     cmds:
@@ -14,7 +18,8 @@ tasks:
   release:
     cmds:
       - docker build . -t wacom-display-switcher-build
-      - id=$(docker create wacom-display-switcher-build) ; docker cp $id:/release.tar ./ ; docker rm $id
+      - id=$(docker create wacom-display-switcher-build) ; docker cp $id:/release.tar ./release.tar ; docker rm $id
       - tar xf ./release.tar
-      - rm ./release.tar
+      - gzip ./release.tar
+      - mv ./release.tar.gz ./$NAME-$VERSION.tar.gz
     silent: true
