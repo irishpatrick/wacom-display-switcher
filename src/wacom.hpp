@@ -33,7 +33,6 @@ namespace wacom {
     std::expected<std::vector<std::string>, Error> GetDevices();
 
     std::optional<Error> SetDisplay(const displays::DisplayMetrics &);
-
 }
 
 #endif /* WACOM_HPP */

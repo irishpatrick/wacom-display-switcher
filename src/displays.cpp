@@ -159,4 +159,23 @@ namespace displays {
         const double scaleX = double(width) / double(max.second - min.second);
         return int(max.second * scaleX * (9.0 / 16.0));
     }
+
+    DisplayMetrics GetFusedDisplay() {
+        const auto& displays = GetDisplays();
+
+        int offsetX = 0;
+        int offsetY = 0;
+        int width = 0;
+        int height = 0;
+        for (const auto& disp : displays) {
+            const auto trueWidth = disp.offsetX + disp.width;
+            const auto trueHeight = disp.offsetY + disp.height;
+            width = std::max(trueWidth, width);
+            height = std::max(trueHeight, height);
+            offsetX = std::min(offsetX, disp.offsetX);
+            offsetY = std::min(offsetY, disp.offsetY);
+        }
+
+        return {-1, "fused", width, height, offsetX, offsetY};
+    }
 }

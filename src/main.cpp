@@ -44,12 +44,19 @@ static void drawMonitors(cairo_t *cr, int width) {
     displaysButtons.clear();
     displaysButtons.reserve(monitors.size());
     int i = 0;
+    double minX = width;
+    double maxX = 0;
+    double maxY = 0;
     for (const auto &monitor: monitors) {
         const auto x = padding + monitor.offsetX * scaleX + spacing * (i > 0);
         const auto y = padding + monitor.offsetY * scaleY;
         const auto w = monitor.width * scaleX;
         const auto h = monitor.height * scaleY;
         const auto margin = 10;
+
+        minX = fmin(minX, x);
+        maxX = fmax(maxX, x + w);
+        maxY = fmax(maxY, y + h);
 
         displaysButtons.emplace_back(monitor, AABB(x, y, w, h));
 
@@ -77,6 +84,23 @@ static void drawMonitors(cairo_t *cr, int width) {
 
         ++i;
     }
+
+    // all selection
+    const auto allHeight = 60.0;
+    displaysButtons.emplace_back(displays::GetFusedDisplay(), AABB(minX, maxY + padding, maxX - minX, allHeight));
+    cairo_set_source_rgb(cr, 0, 8.0 / 255.0, 49.0 / 255.0);
+    cairo_rectangle(cr, minX, maxY + padding, maxX - minX, allHeight);
+    cairo_fill(cr);
+    cairo_set_source_rgb(cr, 181.0 / 255.0, 209.0 / 255.0, 204.0 / 255.0);
+    cairo_rectangle(cr, minX + padding, maxY + padding * 2, maxX - minX - padding * 2, allHeight - padding * 2);
+    cairo_fill(cr);
+    cairo_set_source_rgb(cr, 0.1, 0.1, 0.1);
+    cairo_select_font_face(cr, "Ubuntu", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_set_font_size(cr, 16);
+    cairo_text_extents_t extents;
+    cairo_text_extents(cr, "Map All Monitors", &extents);
+    cairo_move_to(cr, minX + padding + extents.x_bearing + spacing, maxY + padding + padding - extents.y_bearing + spacing);
+    cairo_show_text(cr, "Map All Monitors");
 }
 
 static void draw_function(GtkDrawingArea *area, cairo_t *cr, int width, int height, gpointer data) {

@@ -5,7 +5,6 @@
 #include <cassert>
 #include <cstdlib>
 #include <format>
-#include <iostream>
 #include <libudev.h>
 
 namespace wacom {

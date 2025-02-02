@@ -31,6 +31,7 @@ namespace displays {
     std::pair<int, int> QueryMousePosition();
 
     const std::vector<DisplayMetrics> &GetDisplays();
+    DisplayMetrics GetFusedDisplay();
 
     int EstimateHeight(int);
 
